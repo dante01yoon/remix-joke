@@ -9,7 +9,7 @@ export let links: LinksFunction = () => {
       href: stylesUrl
     }
   ];
-};
+};  
 
 export default function Index() {
   return (
