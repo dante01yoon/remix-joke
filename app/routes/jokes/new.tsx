@@ -1,8 +1,9 @@
 import type { ActionFunction } from "remix";
-import { redirect, useActionData, json } from "remix";
+import { redirect, useActionData, json, useTransition, Form } from "remix";
 import { db } from "~/utils/db.server";
 import { Joke } from "@prisma/client";
-
+import { Transition } from "@remix-run/react/transition";
+import React from "react";
 interface CreateData {
   data: Pick<Joke, "name" | "content">;
 }
@@ -35,56 +36,77 @@ const badRequest = (data: ActionData) => {
   return json(data, {status: 400})
 }
 
-// export const action: ActionFunction = async ({
-//   request,
-// }) => {
-//   const form = await request.formData();
-//   const name = form.get("name");
-//   const content = form.get("content");
+export const action: ActionFunction = async ({
+  request,
+}) => {
+  const form = await request.formData();
+  const name = form.get("name");
+  const content = form.get("content");
 
-//   if(typeof name !== "string" || typeof content !== "string" ) {
-//     return badRequest({
-//       formError: `Form not submitted correctly`,
-//     })
-//   }
+  if(typeof name !== "string" || typeof content !== "string" ) {
+    return badRequest({
+      formError: `Form not submitted correctly`,
+    })
+  }
+  
+  const fields = { name, content };
+  const fieldErrors = {
+    name: validateJokeName(name),
+    content: validateJokeContent(content),
+  };
 
-//   const fields = { name, content };
-//   const fieldErrors = {
-//     name: validateJokeName(name),
-//     content: validateJokeContent(content),
-//   };
-
-//   if(Object.values(fieldErrors).some(Boolean)) {
-//     return badRequest({fieldErrors, fields});
-//   }
-
-//   const joke = await db.joke.create<CreateData>({ data: fields});
-//   return redirect(`/jokes/${joke.id}`);
-// }
+  if(Object.values(fieldErrors).some(Boolean)) {
+    return badRequest({fieldErrors, fields});
+  }
+  const timer = new Promise((resolve) => {
+    setTimeout(async () => {
+      // const joke = await db.joke.create<CreateData>({ data: fields});
+      resolve({id: "11234563434124"} as Joke);
+    }, 3000);
+  });;
+  const joke = await timer as Joke;
+  // ${joke.id}
+  return redirect(`/jokes/new`);
+}
 
 export default function NewJokeRoute() {
-  // const actionData = useActionData<ActionData>();
-  const actionData = {};
+  const actionData = useActionData<ActionData>();
+  const transition = useTransition();
+  console.log({transition})
+
+  const getSubmitButtonText = (transitionState: Transition["state"]) => {
+    switch(transitionState){
+      case "submitting":
+        return "Adding...";
+      case "loading":
+        return "Added!";
+      default:
+        return "Add";
+    }
+  }
+  
   return (
     <div>
       <p>Add your own hilarious joke</p>
-      <form method="post">
+      <Form method="post">
+      <fieldset disabled={transition.state === "submitting"}>
+        <legend>share your own hilarious jokes!</legend>
         <div>
           <label>
             Name: <input 
               type="text" 
               name="name"
-              // defaultValue={actionData?.fields?.name}
-              // aria-required
-              // aria-invalid={Boolean(actionData?.fieldErrors?.name) || undefined}
-              // aria-describedby={
-              //   actionData?.fieldErrors?.name
-              //     ? "name-error"
-              //     : undefined
-              // }
+              defaultValue={actionData?.fields?.name}
+              aria-required
+              aria-invalid={Boolean(actionData?.fieldErrors?.name) || undefined}
+              aria-describedby={
+                actionData?.fieldErrors?.name
+                  ? "name-error"
+                  : undefined
+              }
             />
           </label>
-          {/* {actionData?.fieldErrors?.name ? (
+          {actionData?.fieldErrors?.name ? (
             <p
               className="form-validation-error"
               role="alert"
@@ -92,25 +114,25 @@ export default function NewJokeRoute() {
             >
               {actionData.fieldErrors.name}
             </p>
-          ) : null} */}
+          ) : null}
         </div>
         <div>
           <label>
             Content: <textarea 
               name="content"
-              // defaultValue={actionData?.fields?.content}
-              // aria-invalid={
-              //   Boolean(actionData?.fieldErrors?.content) ||
-              //   undefined
-              // }
-              // aria-describedBy={
-              //   actionData?.fieldErrors?.content
-              //     ? "content-error"
-              //     : undefined
-              // }
+              defaultValue={actionData?.fields?.content}
+              aria-invalid={
+                Boolean(actionData?.fieldErrors?.content) ||
+                undefined
+              }
+              aria-describedby={
+                actionData?.fieldErrors?.content
+                  ? "content-error"
+                  : undefined
+              }
             />
           </label>
-          {/* {actionData?.fieldErrors?.content ? (
+          {actionData?.fieldErrors?.content ? (
             <p
               className="form-validation-error"
               role="alert"
@@ -118,14 +140,15 @@ export default function NewJokeRoute() {
             >
               {actionData.fieldErrors.content}
             </p>
-          ) : null} */}
+          ) : null}
         </div>
         <div>
           <button type="submit" className="button">
-            Add
+            {getSubmitButtonText(transition.state)}
           </button>
         </div>
-      </form>
+        </fieldset>
+      </Form>
     </div>
   );
 }
