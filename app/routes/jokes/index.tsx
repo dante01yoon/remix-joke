@@ -14,6 +14,7 @@ export const loader: LoaderFunction = async () => {
   });
   const data: LoaderData = { randomJoke };
   return data;
+  // return null;
 };
 
 export default function JokesIndexRoute() {
@@ -22,9 +23,9 @@ export default function JokesIndexRoute() {
   return (
     <div>
       <p>Here's a random joke:</p>
-      <p>{data.randomJoke.content}</p>
-      <Link to={data.randomJoke.id}>
-        "{data.randomJoke.name}" Permalink
+      <p>{data.randomJoke?.content}</p>
+      <Link to={data.randomJoke?.id || {}}>
+        "{data.randomJoke?.name}" Permalink
       </Link>
     </div>
   );
